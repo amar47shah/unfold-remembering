@@ -4,7 +4,7 @@ import Control.Arrow (second)
 import Control.Category ((<<<), (>>>))
 import Data.List (unfoldr)
 import Data.Tuple (swap)
-import Safe (headMay, lastMay, tailMay)
+import Safe (lastMay)
 
 -- | Unfold and return a list of result-intermediate tuples.
 -- Compare to unfoldr :: (b -> Maybe (a, b)) -> b -> [a]
@@ -35,16 +35,16 @@ unfoldRLast' f x =
     (Just y , x') -> let (ys, x'') = unfoldRLast' f x' in (y:ys, x'')
 
 -- | Fold and Unfold as explicit duals.
-foldr' :: (Maybe (a, b) -> b) -> [a] -> b
-foldr' f = f <<< fmap (\(x, xs) -> (x, foldr' f xs)) <<< headAndTailMay
+foldr'   :: (Maybe (a, b) -> b           ) -> [a] -> b
+unfoldr' :: (b            -> Maybe (a, b)) -> b   -> [a]
 
-unfoldr' :: (b -> Maybe (a, b)) -> b -> [a]
+foldr'   f = f <<< fmap (\(x, xs) -> (x,   foldr' f xs)) <<< headAndTailMay
 unfoldr' f = f >>> fmap (\(x, xs) -> (x, unfoldr' f xs)) >>> consMay
 
-headAndTailMay :: [a] -> Maybe (a, [a])
-headAndTailMay []     = Nothing
-headAndTailMay (x:xs) = Just (x, xs)
+headAndTailMay :: [a]            -> Maybe (a, [a])
+consMay        :: Maybe (a, [a]) -> [a]
 
-consMay :: Maybe (a, [a]) -> [a]
-consMay Nothing = []
-consMay (Just (x, xs)) = x:xs
+headAndTailMay []             = Nothing
+headAndTailMay (x : xs)       = Just (x, xs)
+consMay        Nothing        = []
+consMay        (Just (x, xs)) = x : xs
