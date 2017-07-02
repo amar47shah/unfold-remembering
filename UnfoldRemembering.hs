@@ -1,6 +1,6 @@
 module UnfoldRemembering (unfoldR, unfoldRLast) where
 
-import Control.Arrow (second)
+import Control.Arrow (first, second)
 import Control.Category ((<<<), (>>>))
 import Data.List (unfoldr)
 import Data.Tuple (swap)
@@ -29,17 +29,16 @@ remembering f b0 = (\(a, b) -> (([b], a), b)) <$> f b0
 
 -- | Simpler version of unfoldRLast, with different unfolding function type.
 unfoldRLast' :: (b -> (Maybe a, b)) -> b -> ([a], b)
-unfoldRLast' f x =
-  case f x of
-    (Nothing, x') -> ([], x')
-    (Just y , x') -> let (ys, x'') = unfoldRLast' f x' in (y:ys, x'')
+unfoldRLast' f x = case f x of
+  (Nothing, x') -> ([], x')
+  (Just y , x') -> first (y:) $ unfoldRLast' f x'
 
 -- | Fold and Unfold as explicit duals.
 foldr'   :: (Maybe (a, b) -> b           ) -> [a] -> b
 unfoldr' :: (b            -> Maybe (a, b)) -> b   -> [a]
 
-foldr'   f = f <<< fmap (\(x, xs) -> (x,   foldr' f xs)) <<< headAndTailMay
-unfoldr' f = f >>> fmap (\(x, xs) -> (x, unfoldr' f xs)) >>> consMay
+foldr'   f = f <<< fmap (second $   foldr' f) <<< headAndTailMay
+unfoldr' f = f >>> fmap (second $ unfoldr' f) >>> consMay
 
 headAndTailMay :: [a]            -> Maybe (a, [a])
 consMay        :: Maybe (a, [a]) -> [a]
