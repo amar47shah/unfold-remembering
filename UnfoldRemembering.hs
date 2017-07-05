@@ -5,6 +5,8 @@ import Control.Category ((<<<), (>>>))
 import Data.List (unfoldr)
 import Data.Tuple (swap)
 import Safe (lastMay)
+import Test.Tasty
+import Test.Tasty.QuickCheck as QC
 
 -- | Unfold and return a list of result-intermediate tuples.
 -- Compare to unfoldr :: (b -> Maybe (a, b)) -> b -> [a]
@@ -47,3 +49,22 @@ headAndTailMay []             = Nothing
 headAndTailMay (x : xs)       = Just (x, xs)
 consMay        Nothing        = []
 consMay        (Just (x, xs)) = x : xs
+
+-- Test
+
+half :: Int -> Maybe (Int, Int)
+half 0 = Nothing
+half n = Just (n - m, m) where m = div n 2
+
+add :: Maybe (Int, Int) -> Int
+add Nothing       = 0
+add (Just (x, y)) = x + y
+
+main :: IO ()
+main = defaultMain qcProps
+
+qcProps :: TestTree
+qcProps = testGroup "QuickCheck"
+  [ QC.testProperty "foldr' add . unfoldr' half" $
+      \x -> (x > 0) ==> x == (foldr' add . unfoldr' half) x
+  ]
